@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=Shortcuts Applet
+Comment=A shortcuts viewer applet
+Type=Application
+Icon=io.github.l-const
+Exec=shortcuts-applet %F
+Terminal=false
+StartupNotify=true
+Categories=COSMIC
+Keywords=COSMIC
+NoDisplay=true
+X-CosmicApplet=true
+X-CosmicHoverPopup=Auto
+MimeType=
