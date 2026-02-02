@@ -79,7 +79,7 @@ KeyPeek automatically loads shortcuts from your COSMIC settings configuration. N
 
 ## Technical Details
 
-- **App ID**: `io.github.l-const.keypeek`
+- **App ID**: `io.github.lconst.keypeek`
 - **Language**: Rust
 - **Framework**: libcosmic
 - **License**: MIT
