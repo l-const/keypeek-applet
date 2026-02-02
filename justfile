@@ -58,6 +58,26 @@ install:
 uninstall:
     rm {{bin-dst}} {{desktop-dst}} {{icon-dst}}
 
+
+# Build flatpak locally
+flatpak-builder:
+    flatpak-builder \
+        --force-clean \
+        --verbose \
+        --ccache \
+        --user \
+        --disable-rofiles-fuse \
+        --install \
+        --install-deps-from=flathub \
+        --repo=repo \
+        flatpak-out \
+        io.github.l-const.keypeek.json
+
+# Update flatpak cargo-sources.json
+flatpak-cargo-sources:
+    python3 ./resources/scripts/flatpak-cargo-generator.py ./Cargo.lock -o ./flatpak/cargo-sources.json
+
+
 # Vendor dependencies locally
 vendor:
     mkdir -p .cargo
@@ -65,6 +85,7 @@ vendor:
     echo 'directory = "vendor"' >> .cargo/config.toml
     echo >> .cargo/config.toml
     rm -rf .cargo vendor
+
 
 # Extracts vendored dependencies
 vendor-extract:
