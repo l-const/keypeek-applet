@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 
 use crate::config::Config;
-use crate::fl;
+use crate::shortcuts::{KeyBinding, load_cosmic_shortcuts};
 use cosmic::cosmic_config::{self, CosmicConfigEntry};
-use cosmic::iced::{window::Id, Limits, Subscription};
+use cosmic::iced::widget::svg;
+use cosmic::iced::{Limits, Subscription, window::Id};
 use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
 use cosmic::prelude::*;
 use cosmic::widget;
@@ -19,8 +20,10 @@ pub struct AppModel {
     popup: Option<Id>,
     /// Configuration data that persists between application runs.
     config: Config,
-    /// Example row toggler.
-    example_row: bool,
+
+    shortcuts: Vec<KeyBinding>,
+    /// Search query for filtering shortcuts
+    search_query: String,
 }
 
 /// Messages emitted by the application and its widgets.
@@ -30,7 +33,7 @@ pub enum Message {
     PopupClosed(Id),
     SubscriptionChannel,
     UpdateConfig(Config),
-    ToggleExampleRow(bool),
+    SearchInput(String),
 }
 
 /// Create a COSMIC application from the app model
@@ -45,7 +48,7 @@ impl cosmic::Application for AppModel {
     type Message = Message;
 
     /// Unique identifier in RDNN (reverse domain name notation) format.
-    const APP_ID: &'static str = "io.github.l-const";
+    const APP_ID: &'static str = "io.github.l-const.keypeek";
 
     fn core(&self) -> &cosmic::Core {
         &self.core
@@ -60,6 +63,12 @@ impl cosmic::Application for AppModel {
         core: cosmic::Core,
         _flags: Self::Flags,
     ) -> (Self, Task<cosmic::Action<Self::Message>>) {
+        // Load cosmic shortcuts
+        let shortcuts = load_cosmic_shortcuts().unwrap_or_else(|e| {
+            log::error!("Failed to load cosmic shortcuts: {}", e);
+            Vec::new()
+        });
+
         // Construct the app model with the runtime's core.
         let app = AppModel {
             core,
@@ -75,6 +84,8 @@ impl cosmic::Application for AppModel {
                     }
                 })
                 .unwrap_or_default(),
+            shortcuts,
+            search_query: String::new(),
             ..Default::default()
         };
 
@@ -91,9 +102,13 @@ impl cosmic::Application for AppModel {
     /// This view should emit messages to toggle the applet's popup window, which will
     /// be drawn using the `view_window` method.
     fn view(&self) -> Element<'_, Self::Message> {
-        self.core
-            .applet
-            .icon_button("display-symbolic")
+        // Embed SVG directly to preserve colors
+        let svg_data = include_bytes!("../resources/io.github.l-const.keypeek.svg");
+        let svg_handle = svg::Handle::from_memory(svg_data);
+
+        let icon_svg = svg(svg_handle);
+
+        widget::button::custom(icon_svg)
             .on_press(Message::TogglePopup)
             .into()
     }
@@ -102,15 +117,61 @@ impl cosmic::Application for AppModel {
     /// multiple poups, you may match the id parameter to determine which popup to
     /// create a view for.
     fn view_window(&self, _id: Id) -> Element<'_, Self::Message> {
-        let content_list = widget::list_column()
-            .padding(5)
-            .spacing(0)
-            .add(widget::settings::item(
-                fl!("example-row"),
-                widget::toggler(self.example_row).on_toggle(Message::ToggleExampleRow),
-            ));
+        // Search input at the top with container to avoid edge artifacts
+        let search_input = widget::container(
+            widget::text_input("Search shortcuts...", &self.search_query)
+                .on_input(Message::SearchInput)
+                .padding(8),
+        )
+        .padding([8, 12]);
 
-        self.core.applet.popup_container(content_list).into()
+        let mut content_list = widget::list_column().padding(5).spacing(0);
+
+        // Filter shortcuts based on search query
+        let filtered_shortcuts: Vec<&KeyBinding> = self
+            .shortcuts
+            .iter()
+            .filter(|shortcut| {
+                if self.search_query.is_empty() {
+                    true
+                } else {
+                    shortcut
+                        .description
+                        .to_lowercase()
+                        .contains(&self.search_query.to_lowercase())
+                }
+            })
+            .collect();
+
+        // Add each shortcut as a column with binding in bold and description in normal text
+        for shortcut in filtered_shortcuts {
+            // Create a column with binding (bold) on top and description (normal wrapped) below
+            let shortcut_item = widget::column::with_children(vec![
+                widget::text::body(shortcut.to_string())
+                    .font(cosmic::iced_core::Font {
+                        weight: cosmic::iced_core::font::Weight::Bold,
+                        ..Default::default()
+                    })
+                    .into(),
+                widget::text::body(&shortcut.description)
+                    .wrapping(cosmic::iced::widget::text::Wrapping::Word)
+                    .into(),
+            ])
+            .spacing(4)
+            .padding([8, 12]);
+
+            content_list = content_list.add(shortcut_item);
+        }
+
+        // Wrap in scrollable to show all shortcuts
+        let scrollable_content = widget::scrollable(content_list);
+
+        // Combine search input and scrollable content in a column
+        let popup_content =
+            widget::column::with_children(vec![search_input.into(), scrollable_content.into()])
+                .spacing(0);
+
+        self.core.applet.popup_container(popup_content).into()
     }
 
     /// Register subscriptions for this application.
@@ -158,7 +219,9 @@ impl cosmic::Application for AppModel {
             Message::UpdateConfig(config) => {
                 self.config = config;
             }
-            Message::ToggleExampleRow(toggled) => self.example_row = toggled,
+            Message::SearchInput(query) => {
+                self.search_query = query;
+            }
             Message::TogglePopup => {
                 return if let Some(p) = self.popup.take() {
                     destroy_popup(p)
@@ -173,12 +236,12 @@ impl cosmic::Application for AppModel {
                         None,
                     );
                     popup_settings.positioner.size_limits = Limits::NONE
-                        .max_width(372.0)
-                        .min_width(300.0)
+                        .max_width(500.0)
+                        .min_width(450.0)
                         .min_height(200.0)
-                        .max_height(1080.0);
+                        .max_height(800.0);
                     get_popup(popup_settings)
-                }
+                };
             }
             Message::PopupClosed(id) => {
                 if self.popup.as_ref() == Some(&id) {

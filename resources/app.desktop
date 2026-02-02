@@ -1,9 +1,9 @@
 [Desktop Entry]
-Name=Shortcuts Applet
-Comment=A shortcuts viewer applet
+Name=KeyPeek
+Comment=Quick view and search for keyboard shortcuts
 Type=Application
-Icon=io.github.l-const
-Exec=shortcuts-applet %F
+Icon=io.github.l-const.keypeek
+Exec=keypeek-applet %F
 Terminal=false
 StartupNotify=true
 Categories=COSMIC

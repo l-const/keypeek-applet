@@ -1,19 +1,19 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <component type="desktop-application">
-  <id>io.github.l-const</id>
+  <id>io.github.l-const.keypeek</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
-  <name>Shortcuts Applet</name>
-  <summary>A shortcuts viewer applet</summary>
+  <name>KeyPeek</name>
+  <summary>Quick view and search for keyboard shortcuts</summary>
   <icon type="remote" width="64" height="64" scale="1">
     https://github.com/pop-os/cosmic-app-template/raw/main/resources/icons/hicolor/scalable/apps/icon.svg
   </icon>
-  <url type="vcs-browser">https://github.com/pop-os/cosmic-app-template</url>
-  <launchable type="desktop-id">io.github.l-const.desktop</launchable>
+  <url type="vcs-browser">https://github.com/l-const/shortcuts-applet</url>
+  <launchable type="desktop-id">io.github.l-const.keypeek.desktop</launchable>
   <provides>
-    <id>io.github.l-const</id>
+    <id>io.github.l-const.keypeek</id>
     <binaries>
-      <binary>shortcuts-applet</binary>
+      <binary>keepeek-applet</binary>
     </binaries>
   </provides>
   <requires>
@@ -32,4 +32,3 @@
   </keywords>
   <content_rating type="oars-1.1" />
 </component>
-

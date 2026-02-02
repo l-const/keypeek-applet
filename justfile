@@ -1,5 +1,5 @@
-name := 'shortcuts-applet'
-appid := 'io.github.l-const'
+name := 'keypeek-applet'
+appid := 'io.github.l-const.keypeek'
 
 rootdir := ''
 prefix := '/usr'
@@ -52,7 +52,7 @@ install:
     install -Dm0755 {{ cargo-target-dir / 'release' / name }} {{bin-dst}}
     install -Dm0644 resources/app.desktop {{desktop-dst}}
     install -Dm0644 resources/app.metainfo.xml {{appdata-dst}}
-    install -Dm0644 resources/icon.svg {{icon-dst}}
+    install -Dm0644 resources/io.github.l-const.keypeek.svg {{icon-dst}}
 
 # Uninstalls installed files
 uninstall:
@@ -79,4 +79,3 @@ tag version:
     git add Cargo.lock
     git commit -m 'release: {{version}}'
     git tag -a {{version}} -m ''
-
