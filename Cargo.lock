@@ -1156,14 +1156,15 @@ dependencies = [
 [[package]]
 name = "cosmic-settings-config"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/cosmic-settings-daemon?rev=ef024bfd06bf9fbd57246a25c91d1fdd28153d05#ef024bfd06bf9fbd57246a25c91d1fdd28153d05"
+source = "git+https://github.com/pop-os/cosmic-settings-daemon?rev=66e5f1d82b4daa62b028139e93a58e471bc5ac9e#66e5f1d82b4daa62b028139e93a58e471bc5ac9e"
 dependencies = [
  "cosmic-config 1.0.0",
- "ron 0.11.0",
+ "ron 0.9.0",
  "serde",
  "serde_with",
+ "thiserror 2.0.18",
  "tracing",
- "xkbcommon 0.9.0",
+ "xkbcommon 0.7.0",
 ]
 
 [[package]]
@@ -2909,7 +2910,7 @@ dependencies = [
 
 [[package]]
 name = "keypeek-applet"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "anyhow",
  "cosmic-settings-config",
@@ -4470,6 +4471,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c6a884d2998352bb4daf0183589aec883f16a6da1f4dde84d8e2e9a5409a1ce"
 dependencies = [
  "bytemuck",
+]
+
+[[package]]
+name = "ron"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63f3aa105dea217ef30d89581b65a4d527a19afc95ef5750be3890e8d3c5b837"
+dependencies = [
+ "base64",
+ "bitflags 2.10.0",
+ "serde",
+ "serde_derive",
+ "unicode-ident",
 ]
 
 [[package]]
@@ -6633,17 +6647,6 @@ name = "xkbcommon"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d66ca9352cbd4eecbbc40871d8a11b4ac8107cfc528a6e14d7c19c69d0e1ac9"
-dependencies = [
- "libc",
- "memmap2 0.9.9",
- "xkeysym",
-]
-
-[[package]]
-name = "xkbcommon"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7a974f48060a14e95705c01f24ad9c3345022f4d97441b8a36beb7ed5c4a02d"
 dependencies = [
  "libc",
  "memmap2 0.9.9",
