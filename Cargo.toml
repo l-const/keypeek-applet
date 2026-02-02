@@ -1,6 +1,6 @@
 [package]
 name = "keypeek-applet"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2024"
 license = "MIT"
 description = "A shortcuts viewer applet"
@@ -8,7 +8,7 @@ repository = "https://github.com/l-const/keypeek-applet"
 
 [dependencies]
 # cosmic-settings-config = { git = "https://github.com/pop-os/cosmic-settings-daemon", package = "cosmic-settings-config", rev = "ef024bfd06bf9fbd57246a25c91d1fdd28153d05" }
-cosmic-settings-config = { git = "https://github.com/pop-os/cosmic-settings-daemon", package = "cosmic-settings-config", rev = "66e5f1d82b4daa62b028139e93a58e471bc5ac9e" }
+cosmic-settings-config = { git = "https://github.com/pop-os/cosmic-settings-daemon", package = "cosmic-settings-config", rev = "66e5f1d" }
 
 xkbcommon = "0.8"
 futures-util = "0.3.31"
@@ -25,7 +25,7 @@ features = ["fluent-system", "desktop-requester"]
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
-rev = "9fcd449611d30891d5fe5272520672da5ef6a723"
+rev = "9fcd449"
 # See https://github.com/pop-os/libcosmic/blob/master/Cargo.toml for available features.
 features = [
     # Applet support
