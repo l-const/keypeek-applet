@@ -36,6 +36,7 @@ KeyPeek sits conveniently in your COSMIC panel:
 
 ```bash
 # Clone the repository
+sudo apt install libxkbcommon-dev
 git clone https://github.com/l-const/shortcuts-applet.git
 cd shortcuts-applet
 
@@ -67,12 +68,6 @@ After installation, you may need to restart your COSMIC panel or log out and bac
 ```bash
 # Run in development mode
 just run
-
-# Run clippy checks
-just check
-
-# Clean build artifacts
-just clean
 
 # Build for release
 just build-release
