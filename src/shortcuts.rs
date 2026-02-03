@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use cosmic_config::Config;
 use cosmic_settings_config::shortcuts as cs;
 use cosmic_settings_config::shortcuts::action::System as SystemAction;
 use cosmic_settings_config::shortcuts::action::{
@@ -9,6 +10,12 @@ use cosmic_settings_config::shortcuts::Action;
 use std::collections::HashMap;
 use std::fmt;
 use xkbcommon::xkb;
+
+use std::env;
+
+fn is_flatpak() -> bool {
+    env::var("FLATPAK_ID").is_ok()
+}
 
 //
 // This reader exclusively loads shortcuts from the Cosmic Settings config
@@ -223,8 +230,28 @@ pub fn localize_action(action: &Action) -> String {
 /// helper cannot be executed. The returned Vec may be empty if no shortcuts
 /// are configured.
 pub fn load_cosmic_shortcuts() -> Result<Vec<KeyBinding>> {
+    let is_flatpak = is_flatpak();
+    log::info!("is_flatpak: {}", is_flatpak);
+
+    // When running in Flatpak, prepend the host system data directory
+    // so cosmic-config can find system defaults from the host
+    if is_flatpak {
+        unsafe {
+            if let Ok(current_dirs) = env::var("XDG_DATA_DIRS") {
+                let new_dirs = format!("/run/host/usr/share:{}", current_dirs);
+                env::set_var("XDG_DATA_DIRS", new_dirs);
+            } else {
+                env::set_var(
+                    "XDG_DATA_DIRS",
+                    "/run/host/usr/share:/usr/local/share:/usr/share",
+                );
+            }
+        }
+        log::info!("XDG_DATA_DIRS set to: {:?}", env::var("XDG_DATA_DIRS"));
+    }
+
     // We call those here and convert their Shortcuts map into our KeyBinding list.
-    let ctx = cs::context().context("failed to open cosmic settings config context")?;
+    let ctx: Config = cs::context().context("failed to open cosmic settings config context")?;
 
     // This returns the merged system + user shortcuts
     let cs_shortcuts = cs::shortcuts(&ctx);
