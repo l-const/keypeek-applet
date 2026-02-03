@@ -1,12 +1,13 @@
 [package]
 name = "keypeek-applet"
-version = "0.1.9"
+version = "0.1.10"
 edition = "2024"
 license = "MIT"
 description = "A shortcuts viewer applet"
 repository = "https://github.com/l-const/keypeek-applet"
 
 [dependencies]
+cosmic-config = { git = "https://github.com/pop-os/libcosmic", package = "cosmic-config", version = "1.0.0" }
 cosmic-settings-config = { git = "https://github.com/pop-os/cosmic-settings-daemon", package = "cosmic-settings-config", rev = "ef024bfd06bf9fbd57246a25c91d1fdd28153d05" }
 
 xkbcommon = "0.8"
