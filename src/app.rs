@@ -9,6 +9,11 @@ use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
 use cosmic::prelude::*;
 use cosmic::widget;
 use futures_util::SinkExt;
+use notify::{RecursiveMode, Watcher};
+use std::path::PathBuf;
+use std::time::Duration;
+
+const COSMIC_SHORTCUTS_DIR: &str = ".config/cosmic/com.system76.CosmicSettings.Shortcuts/";
 
 /// The application model stores app-specific state used to describe its interface and
 /// drive its logic.
@@ -29,6 +34,7 @@ pub struct AppModel {
 /// Messages emitted by the application and its widgets.
 #[derive(Debug, Clone)]
 pub enum Message {
+    UpdateShortcuts,
     TogglePopup,
     PopupClosed(Id),
     SubscriptionChannel,
@@ -203,6 +209,38 @@ impl cosmic::Application for AppModel {
 
                     Message::UpdateConfig(update.config)
                 }),
+            // Watch for changes in the cosmic shortcuts directory.
+            Subscription::run_with_id(
+                std::any::TypeId::of::<PathBuf>(),
+                cosmic::iced::stream::channel(4, move |mut channel| async move {
+                    let home = std::env::var("HOME").unwrap_or_else(|_| String::from("/home"));
+                    let shortcuts_path = PathBuf::from(&home).join(COSMIC_SHORTCUTS_DIR);
+
+                    let (tx, mut rx) = tokio::sync::mpsc::channel(100);
+
+                    let mut watcher = notify::RecommendedWatcher::new(
+                        move |res: Result<notify::Event, notify::Error>| {
+                            if let Ok(event) = res {
+                                if event.kind.is_modify() || event.kind.is_create() {
+                                    let _ = tx.blocking_send(());
+                                }
+                            }
+                        },
+                        notify::Config::default().with_poll_interval(Duration::from_millis(100)),
+                    )
+                    .ok();
+
+                    if let Some(ref mut w) = watcher {
+                        let _ = w.watch(&shortcuts_path, RecursiveMode::Recursive);
+                    }
+
+                    while let Some(_) = rx.recv().await {
+                        let _ = channel.send(Message::UpdateShortcuts).await;
+                    }
+
+                    futures_util::future::pending().await
+                }),
+            ),
         ])
     }
 
@@ -213,6 +251,9 @@ impl cosmic::Application for AppModel {
     /// tasks are finished.
     fn update(&mut self, message: Self::Message) -> Task<cosmic::Action<Self::Message>> {
         match message {
+            Message::UpdateShortcuts => {
+                self.shortcuts = load_cosmic_shortcuts().unwrap();
+            }
             Message::SubscriptionChannel => {
                 // For example purposes only.
             }
