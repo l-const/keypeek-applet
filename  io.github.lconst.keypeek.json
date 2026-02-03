@@ -1,18 +1,18 @@
 {
   "id": "io.github.lconst.keypeek",
   "runtime": "org.freedesktop.Platform",
-  "runtime-version": "24.08",
+  "runtime-version": "25.08",
   "sdk": "org.freedesktop.Sdk",
   "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-stable"],
+  "base": "com.system76.Cosmic.BaseApp",
+  "base-version": "stable",
   "command": "keypeek-applet",
   "finish-args": [
     "--socket=wayland",
+    "--share=ipc",
     "--filesystem=xdg-config/cosmic:rw",
-    "--talk-name=com.system76.CosmicSettingsDaemon",
-    "--filesystem=/sys/class/hwmon:ro",
-    "--filesystem=/sys/class/drm:ro",
-    "--filesystem=/sys/devices:ro",
-    "--device=all"
+    "--filesystem=host:ro",
+    "--talk-name=com.system76.CosmicSettingsDaemon"
   ],
   "build-options": {
     "append-path": "/usr/lib/sdk/rust-stable/bin",
@@ -25,8 +25,8 @@
       "name": "keypeek-applet",
       "buildsystem": "simple",
       "build-commands": [
-        "cargo --offline fetch --manifest-path Cargo.toml --verbose",
-        "cargo --offline build --release --verbose",
+        "cargo fetch --manifest-path Cargo.toml --verbose",
+        "cargo build --release --verbose",
         "install -Dm0755 ./target/release/keypeek-applet /app/bin/keypeek-applet",
         "install -Dm0644 ./resources/app.desktop /app/share/applications/io.github.l-const.keypeek.desktop",
         "install -Dm0644 ./resources/app.metainfo.xml /app/share/metainfo/io.github.l-const.keypeek.metainfo.xml",
@@ -34,8 +34,9 @@
       ],
       "sources": [
         {
-          "type": "dir",
-          "path": "./"
+          "type": "git",
+          "url": "https://github.com/l-const/keypeek-applet.git",
+          "tag": "v0.1.12"
         },
         "./cargo-sources.json"
       ]
