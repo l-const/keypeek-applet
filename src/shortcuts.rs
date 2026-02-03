@@ -13,8 +13,53 @@ use xkbcommon::xkb;
 
 use std::env;
 
-fn is_flatpak() -> bool {
-    env::var("FLATPAK_ID").is_ok()
+/// Categories for organizing shortcuts
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ShortcutCategory {
+    WindowManagement,
+    WorkspaceNavigation,
+    WindowMovement,
+    SystemActions,
+    MediaControl,
+    Display,
+    Accessibility,
+    Applications,
+    Custom,
+    Other,
+}
+
+impl ShortcutCategory {
+    /// Returns a human-readable label for the category
+    pub fn label(&self) -> &'static str {
+        match self {
+            ShortcutCategory::WindowManagement => "Window Management",
+            ShortcutCategory::WorkspaceNavigation => "Workspace Navigation",
+            ShortcutCategory::WindowMovement => "Window Movement",
+            ShortcutCategory::SystemActions => "System Actions",
+            ShortcutCategory::MediaControl => "Media Control",
+            ShortcutCategory::Display => "Display & Brightness",
+            ShortcutCategory::Accessibility => "Accessibility",
+            ShortcutCategory::Applications => "Applications",
+            ShortcutCategory::Custom => "Custom (User Defined)",
+            ShortcutCategory::Other => "Other",
+        }
+    }
+
+    /// Returns all categories in a sensible display order
+    pub fn all() -> &'static [ShortcutCategory] {
+        &[
+            ShortcutCategory::WindowManagement,
+            ShortcutCategory::WorkspaceNavigation,
+            ShortcutCategory::WindowMovement,
+            ShortcutCategory::SystemActions,
+            ShortcutCategory::MediaControl,
+            ShortcutCategory::Display,
+            ShortcutCategory::Accessibility,
+            ShortcutCategory::Applications,
+            ShortcutCategory::Custom,
+            ShortcutCategory::Other,
+        ]
+    }
 }
 
 //
@@ -65,6 +110,102 @@ impl fmt::Display for Modifiers {
     }
 }
 
+/// Categorizes an Action into a ShortcutCategory
+pub fn categorize_action(action: &Action) -> ShortcutCategory {
+    match action {
+        // Window Management
+        Action::Close
+        | Action::Maximize
+        | Action::Fullscreen
+        | Action::Minimize
+        | Action::ToggleWindowFloating
+        | Action::ToggleTiling
+        | Action::ToggleStacking
+        | Action::ToggleSticky
+        | Action::SwapWindow
+        | Action::Resizing(_)
+        | Action::Orientation(_)
+        | Action::ToggleOrientation
+        | Action::Focus(_) => ShortcutCategory::WindowManagement,
+
+        // Workspace Navigation
+        Action::Workspace(_)
+        | Action::LastWorkspace
+        | Action::NextWorkspace
+        | Action::PreviousWorkspace
+        | Action::NextOutput
+        | Action::PreviousOutput
+        | Action::SwitchOutput(_) => ShortcutCategory::WorkspaceNavigation,
+
+        // Window Movement
+        Action::Move(_)
+        | Action::MoveToLastWorkspace
+        | Action::MoveToNextOutput
+        | Action::MoveToNextWorkspace
+        | Action::MoveToPreviousWorkspace
+        | Action::MoveToPreviousOutput
+        | Action::MoveToWorkspace(_)
+        | Action::MoveToOutput(_)
+        | Action::SendToLastWorkspace
+        | Action::SendToNextOutput
+        | Action::SendToNextWorkspace
+        | Action::SendToPreviousWorkspace
+        | Action::SendToPreviousOutput
+        | Action::SendToWorkspace(_)
+        | Action::SendToOutput(_)
+        | Action::MigrateWorkspaceToNextOutput
+        | Action::MigrateWorkspaceToOutput(_)
+        | Action::MigrateWorkspaceToPreviousOutput => ShortcutCategory::WindowMovement,
+
+        // System Actions
+        Action::System(SystemAction::LockScreen)
+        | Action::System(SystemAction::LogOut)
+        | Action::System(SystemAction::PowerOff)
+        | Action::System(SystemAction::Suspend)
+        | Action::System(SystemAction::Screenshot)
+        | Action::System(SystemAction::InputSourceSwitch)
+        | Action::System(SystemAction::TouchpadToggle)
+        | Action::System(SystemAction::DisplayToggle)
+        | Action::Terminate => ShortcutCategory::SystemActions,
+
+        // Media Control
+        Action::System(SystemAction::PlayPause)
+        | Action::System(SystemAction::PlayNext)
+        | Action::System(SystemAction::PlayPrev)
+        | Action::System(SystemAction::Mute)
+        | Action::System(SystemAction::MuteMic)
+        | Action::System(SystemAction::VolumeLower)
+        | Action::System(SystemAction::VolumeRaise) => ShortcutCategory::MediaControl,
+
+        // Display
+        Action::System(SystemAction::BrightnessDown)
+        | Action::System(SystemAction::BrightnessUp)
+        | Action::System(SystemAction::KeyboardBrightnessDown)
+        | Action::System(SystemAction::KeyboardBrightnessUp)
+        | Action::ZoomIn
+        | Action::ZoomOut => ShortcutCategory::Display,
+
+        // Accessibility
+        Action::System(SystemAction::ScreenReader) => ShortcutCategory::Accessibility,
+
+        // Applications
+        Action::System(SystemAction::AppLibrary)
+        | Action::System(SystemAction::HomeFolder)
+        | Action::System(SystemAction::Launcher)
+        | Action::System(SystemAction::Terminal)
+        | Action::System(SystemAction::WebBrowser)
+        | Action::System(SystemAction::WindowSwitcher)
+        | Action::System(SystemAction::WindowSwitcherPrevious)
+        | Action::System(SystemAction::WorkspaceOverview) => ShortcutCategory::Applications,
+
+        // Custom (User Defined)
+        Action::Spawn(_) => ShortcutCategory::Custom,
+
+        // Other/Debug
+        Action::Debug | Action::Disable => ShortcutCategory::Other,
+    }
+}
+
 /// Representation used by the overlay renderer
 #[derive(Debug, Clone)]
 pub struct KeyBinding {
@@ -75,6 +216,8 @@ pub struct KeyBinding {
     pub _command: String,
     /// Display string for concatenated keybinds (when multiple bindings share same description)
     pub keybind_display: Option<String>,
+    /// Category this shortcut belongs to
+    pub category: ShortcutCategory,
 }
 
 impl fmt::Display for KeyBinding {
@@ -230,7 +373,7 @@ pub fn localize_action(action: &Action) -> String {
 /// helper cannot be executed. The returned Vec may be empty if no shortcuts
 /// are configured.
 pub fn load_cosmic_shortcuts() -> Result<Vec<KeyBinding>> {
-    let is_flatpak = is_flatpak();
+    let is_flatpak = crate::utils::is_flatpak();
     log::info!("is_flatpak: {}", is_flatpak);
 
     // When running in Flatpak, prepend the host system data directory
@@ -308,12 +451,16 @@ pub fn load_cosmic_shortcuts() -> Result<Vec<KeyBinding>> {
             _ => format!("{:?}", action),
         };
 
+        // Categorize the action
+        let category = categorize_action(&action);
+
         out.push(KeyBinding {
             modifiers: m,
             key: keysym,
             description,
             _command: command,
             keybind_display: None,
+            category,
         });
     }
 

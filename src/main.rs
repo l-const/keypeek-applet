@@ -4,6 +4,7 @@ mod app;
 mod config;
 mod i18n;
 mod shortcuts;
+mod utils;
 
 fn main() -> cosmic::iced::Result {
     env_logger::init();

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 use crate::config::Config;
-use crate::shortcuts::{KeyBinding, load_cosmic_shortcuts};
+use crate::shortcuts::{KeyBinding, load_cosmic_shortcuts, ShortcutCategory};
 use cosmic::cosmic_config::{self, CosmicConfigEntry};
+use std::collections::HashSet;
 use cosmic::iced::widget::svg;
 use cosmic::iced::{Limits, Subscription, window::Id};
 use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
@@ -29,6 +30,8 @@ pub struct AppModel {
     shortcuts: Vec<KeyBinding>,
     /// Search query for filtering shortcuts
     search_query: String,
+    /// Selected categories for filtering shortcuts
+    selected_categories: HashSet<ShortcutCategory>,
 }
 
 /// Messages emitted by the application and its widgets.
@@ -40,6 +43,7 @@ pub enum Message {
     SubscriptionChannel,
     UpdateConfig(Config),
     SearchInput(String),
+    ToggleCategory(ShortcutCategory),
 }
 
 /// Create a COSMIC application from the app model
@@ -92,6 +96,8 @@ impl cosmic::Application for AppModel {
                 .unwrap_or_default(),
             shortcuts,
             search_query: String::new(),
+            // Initialize with all categories selected by default
+            selected_categories: ShortcutCategory::all().iter().copied().collect(),
             ..Default::default()
         };
 
@@ -131,21 +137,46 @@ impl cosmic::Application for AppModel {
         )
         .padding([8, 12]);
 
+        // Category filter checkboxes with wrapping
+        let mut category_checkboxes = Vec::new();
+
+        for category in ShortcutCategory::all() {
+            let is_checked = self.selected_categories.contains(category);
+            let checkbox = widget::checkbox(category.label(), is_checked)
+                .on_toggle(move |_| Message::ToggleCategory(*category));
+            category_checkboxes.push(checkbox.into());
+        }
+
+        let category_row = widget::row::with_children(category_checkboxes)
+            .spacing(8)
+            .padding([8, 12, 4, 12])
+            .wrap();
+
+        let category_filter = widget::container(category_row)
+            .width(cosmic::iced::Length::Fill);
+
         let mut content_list = widget::list_column().padding(5).spacing(0);
 
-        // Filter shortcuts based on search query
+        // Filter shortcuts based on search query and selected categories
         let filtered_shortcuts: Vec<&KeyBinding> = self
             .shortcuts
             .iter()
             .filter(|shortcut| {
-                if self.search_query.is_empty() {
+                // Filter by search query
+                let matches_search = if self.search_query.is_empty() {
                     true
                 } else {
                     shortcut
                         .description
                         .to_lowercase()
                         .contains(&self.search_query.to_lowercase())
-                }
+                };
+
+                // Filter by selected categories
+                let matches_category = self.selected_categories.is_empty()
+                    || self.selected_categories.contains(&shortcut.category);
+
+                matches_search && matches_category
             })
             .collect();
 
@@ -172,10 +203,13 @@ impl cosmic::Application for AppModel {
         // Wrap in scrollable to show all shortcuts
         let scrollable_content = widget::scrollable(content_list);
 
-        // Combine search input and scrollable content in a column
-        let popup_content =
-            widget::column::with_children(vec![search_input.into(), scrollable_content.into()])
-                .spacing(0);
+        // Combine search input, category filter, and scrollable content in a column
+        let popup_content = widget::column::with_children(vec![
+            search_input.into(),
+            category_filter.into(),
+            scrollable_content.into(),
+        ])
+        .spacing(0);
 
         self.core.applet.popup_container(popup_content).into()
     }
@@ -262,6 +296,13 @@ impl cosmic::Application for AppModel {
             }
             Message::SearchInput(query) => {
                 self.search_query = query;
+            }
+            Message::ToggleCategory(category) => {
+                if self.selected_categories.contains(&category) {
+                    self.selected_categories.remove(&category);
+                } else {
+                    self.selected_categories.insert(category);
+                }
             }
             Message::TogglePopup => {
                 return if let Some(p) = self.popup.take() {

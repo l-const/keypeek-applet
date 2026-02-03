@@ -2,6 +2,7 @@
   <img src="resources/io.github.l-const.keypeek.svg" alt="KeyPeek Icon" width="128" height="128">
   <h1>KeyPeek</h1>
   <p><strong>Quick peek at your COSMIC keyboard shortcuts</strong></p>
+  <img src="assets/facet-search.gif" alt="Facet Search" width="400">
 </div>
 
 ---
